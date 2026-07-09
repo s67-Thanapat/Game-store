@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="NEXORA ร้านค้าดิจิทัลอัตโนมัติ เทมเพลตพร้อมปรับแบรนด์">
+  <title>NEXORA — Digital Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#home" aria-label="NEXORA home">
+        <span class="brand-mark">N</span>
+        <span>NEXORA</span>
+      </a>
+
+      <nav class="nav-links" aria-label="เมนูหลัก">
+        <a class="active" href="#home">หน้าหลัก</a>
+        <a href="#products">สินค้า</a>
+        <a href="#how">วิธีสั่งซื้อ</a>
+        <a href="#faq">ช่วยเหลือ</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="icon-button cart-button" id="cartButton" aria-label="เปิดตะกร้า">
+          <span data-icon="bag"></span>
+          <b id="cartCount">0</b>
+        </button>
+        <button class="button button-soft desktop-login" data-open="login">เข้าสู่ระบบ</button>
+        <button class="button button-primary" data-open="register">สมัครสมาชิก</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="store-home" id="home">
+      <div class="container">
+        <div class="store-banner reveal">
+          <div class="banner-pattern"></div>
+          <div class="banner-copy">
+            <span>WELCOME TO</span>
+            <h1>NEXORA</h1>
+            <p>DIGITAL STORE</p>
+            <a href="#products">เลือกซื้อสินค้า <span data-icon="arrow"></span></a>
+          </div>
+          <div class="banner-orbit orbit-one">N</div>
+          <div class="banner-orbit orbit-two">✦</div>
+          <div class="banner-device device-one"><i data-icon="grid"></i></div>
+          <div class="banner-device device-two"><i data-icon="bag"></i></div>
+        </div>
+
+        <div class="notice-bar reveal">
+          <span class="notice-label">ประกาศ</span>
+          <div class="notice-track"><b>●</b> ยินดีต้อนรับสู่ NEXORA ร้านค้าดิจิทัลอัตโนมัติ เปิดให้บริการตลอด 24 ชั่วโมง</div>
+        </div>
+
+        <div class="store-stats reveal">
+          <article><span data-icon="user"></span><div><small>ผู้ใช้งาน</small><strong>12,931 <em>คน</em></strong></div></article>
+          <article><span data-icon="wallet"></span><div><small>ยอดเติม</small><strong>286K <em>บาท</em></strong></div></article>
+          <article><span data-icon="bag"></span><div><small>สินค้าพร้อมขาย</small><strong>128 <em>รายการ</em></strong></div></article>
+          <article><span data-icon="check"></span><div><small>ยอดขายสำเร็จ</small><strong>86K <em>ครั้ง</em></strong></div></article>
+        </div>
+
+        <div class="promo-grid reveal">
+          <button data-category-jump="premium"><span>Premium</span><b>แอปพรีเมียม</b><small>เริ่มต้นเพียง ฿99</small></button>
+          <button data-category-jump="game"><span>Game</span><b>เกมและไอเทม</b><small>เติมไว รับทันที</small></button>
+          <button data-category-jump="service"><span>Service</span><b>บริการออนไลน์</b><small>เครื่องมือครบทุกงาน</small></button>
+          <button data-open="topup"><span>Wallet</span><b>เติมเครดิต</b><small>สแกน QR อัตโนมัติ</small></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section products-section store-products" id="products">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div><span class="kicker">SHOP PRODUCTS</span><h2>สินค้าทั้งหมด</h2></div>
+          <p>เลือกสินค้าที่ต้องการ ระบบจะจัดส่งให้โดยอัตโนมัติทันทีหลังชำระเงิน</p>
+        </div>
+
+        <div class="category-tabs" id="categoryTabs" role="tablist" aria-label="หมวดสินค้า">
+          <button class="active" data-category="all">ทั้งหมด</button>
+          <button data-category="premium">แอปพรีเมียม</button>
+          <button data-category="game">เกม & ไอเทม</button>
+          <button data-category="service">บริการออนไลน์</button>
+        </div>
+
+        <div class="product-grid" id="productGrid"></div>
+
+        <div class="center-action">
+          <button class="button button-ghost" id="showAll">ดูสินค้าทั้งหมด <span data-icon="arrow"></span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section how-section" id="how">
+      <div class="container how-grid">
+        <div class="how-copy reveal">
+          <span class="kicker">เริ่มต้นง่ายในไม่กี่คลิก</span>
+          <h2>ซื้อสะดวก<br>รับของไว ไม่ต้องรอ</h2>
+          <p>ออกแบบทุกขั้นตอนให้สั้น ชัดเจน และปลอดภัย ไม่ว่าคุณจะซื้อจากคอมพิวเตอร์หรือมือถือ</p>
+          <div class="secure-note"><i data-icon="shield"></i><span><b>ชำระเงินอย่างปลอดภัย</b><small>รองรับพร้อมเพย์และเครดิตในระบบ</small></span></div>
+        </div>
+
+        <div class="steps reveal delay-1">
+          <article>
+            <span class="step-no">01</span>
+            <div class="step-icon"><i data-icon="user"></i></div>
+            <div><h3>สร้างบัญชี</h3><p>สมัครสมาชิกฟรี ใช้เวลาไม่ถึงหนึ่งนาที</p></div>
+          </article>
+          <article>
+            <span class="step-no">02</span>
+            <div class="step-icon"><i data-icon="wallet"></i></div>
+            <div><h3>เติมเครดิต</h3><p>สแกน QR พร้อมเพย์ เครดิตเข้าอัตโนมัติ</p></div>
+          </article>
+          <article>
+            <span class="step-no">03</span>
+            <div class="step-icon"><i data-icon="spark"></i></div>
+            <div><h3>เลือกรับสินค้า</h3><p>กดยืนยันและรับสินค้าได้ทันทีจากหน้าออเดอร์</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section testimonials">
+      <div class="container">
+        <div class="section-heading centered reveal">
+          <div><span class="kicker">เสียงจากผู้ใช้งานจริง</span><h2>ความมั่นใจที่ส่งต่อกัน</h2></div>
+        </div>
+        <div class="review-grid">
+          <article class="review-card reveal">
+            <div class="stars">★★★★★</div>
+            <p>“เว็บใช้ง่ายมาก เติมเงินปุ๊บซื้อได้เลย ของเข้าเร็วกว่าที่คิดไว้เยอะครับ”</p>
+            <div class="reviewer"><span>ธ</span><div><b>ธันวา ว.</b><small>ลูกค้ามาแล้ว 8 เดือน</small></div></div>
+          </article>
+          <article class="review-card feature-review reveal delay-1">
+            <div class="stars">★★★★★</div>
+            <p>“ชอบตรงที่เช็กสถานะออเดอร์ได้เองทุกขั้นตอน และมีแอดมินตอบไวมาก”</p>
+            <div class="reviewer"><span>ม</span><div><b>มินตรา พ.</b><small>สั่งซื้อแล้ว 24 ครั้ง</small></div></div>
+          </article>
+          <article class="review-card reveal delay-2">
+            <div class="stars">★★★★★</div>
+            <p>“ราคาดี หน้าร้านดูน่าเชื่อถือ ซื้อให้ทีมงานเป็นประจำเลยครับ”</p>
+            <div class="reviewer"><span>ก</span><div><b>กิตติ ศ.</b><small>ลูกค้าธุรกิจ</small></div></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section faq-section" id="faq">
+      <div class="container faq-grid">
+        <div class="faq-intro reveal">
+          <span class="kicker">คำถามที่พบบ่อย</span>
+          <h2>มีข้อสงสัย?<br>เรามีคำตอบ</h2>
+          <p>หากไม่พบคำตอบที่ต้องการ สามารถติดต่อทีมงานได้ทุกวัน</p>
+          <button class="button button-soft" data-toast="เปิดช่องทางติดต่อทีมงานแล้ว">ติดต่อทีมงาน</button>
+        </div>
+        <div class="accordion reveal delay-1">
+          <article class="open">
+            <button><span>ใช้เวลานานแค่ไหนกว่าจะได้รับสินค้า?</span><i></i></button>
+            <div><p>สินค้าส่วนใหญ่จัดส่งอัตโนมัติภายใน 1 นาทีหลังชำระเงินสำเร็จ สินค้าบางประเภทอาจใช้เวลา 5–15 นาที</p></div>
+          </article>
+          <article>
+            <button><span>ชำระเงินผ่านช่องทางไหนได้บ้าง?</span><i></i></button>
+            <div><p>รองรับเครดิตในระบบ การสแกน QR พร้อมเพย์ และช่องทางอื่นตามที่เจ้าของร้านตั้งค่าไว้</p></div>
+          </article>
+          <article>
+            <button><span>หากสินค้าใช้งานไม่ได้ต้องทำอย่างไร?</span><i></i></button>
+            <div><p>ส่งเลขออเดอร์ให้ทีมงานผ่านเมนูช่วยเหลือ เราจะตรวจสอบและเปลี่ยนสินค้าให้ตามเงื่อนไขรับประกัน</p></div>
+          </article>
+          <article>
+            <button><span>สามารถเช็กประวัติการซื้อย้อนหลังได้ไหม?</span><i></i></button>
+            <div><p>ได้ ทุกออเดอร์จะบันทึกในบัญชีของคุณ พร้อมสถานะ รายละเอียด และวันที่รับประกัน</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-card reveal">
+          <div><span class="kicker">พร้อมเริ่มแล้วหรือยัง?</span><h2>สมัครวันนี้ รับโบนัสต้อนรับทันที</h2><p>สร้างบัญชีฟรี แล้วสัมผัสประสบการณ์ซื้อสินค้าดิจิทัลที่ง่ายกว่าเดิม</p></div>
+          <button class="button button-light button-large" data-open="register">สร้างบัญชีฟรี <span data-icon="arrow"></span></button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <a class="brand" href="#home"><span class="brand-mark">N</span><span>NEXORA</span></a>
+        <p>ร้านค้าดิจิทัลที่ให้ความสำคัญกับความเร็ว ความปลอดภัย และประสบการณ์ที่ดีของคุณ</p>
+      </div>
+      <div><h4>เมนู</h4><a href="#home">หน้าหลัก</a><a href="#products">สินค้า</a><a href="#how">วิธีสั่งซื้อ</a></div>
+      <div><h4>ช่วยเหลือ</h4><a href="#faq">คำถามที่พบบ่อย</a><a href="#" data-toast="เปิดเงื่อนไขการรับประกัน">การรับประกัน</a><a href="#" data-toast="เปิดข้อตกลงการใช้งาน">ข้อตกลงการใช้งาน</a></div>
+      <div><h4>ติดต่อเรา</h4><a href="mailto:hello@nexora.store">hello@nexora.store</a><span>ทุกวัน 09:00–24:00 น.</span><div class="socials"><button>f</button><button>◎</button><button>✦</button></div></div>
+    </div>
+    <div class="container copyright"><span>© 2026 NEXORA. All rights reserved.</span><span>Secure payments · Instant delivery</span></div>
+  </footer>
+
+  <nav class="mobile-nav" aria-label="เมนูมือถือ">
+    <a class="active" href="#home"><i data-icon="home"></i><span>หน้าหลัก</span></a>
+    <a href="#products"><i data-icon="grid"></i><span>สินค้า</span></a>
+    <button data-open="topup"><i data-icon="wallet"></i><span>เติมเงิน</span></button>
+    <button id="mobileCart"><i data-icon="bag"></i><span>ตะกร้า</span><b id="mobileCartCount">0</b></button>
+    <button data-open="login"><i data-icon="user"></i><span>บัญชี</span></button>
+  </nav>
+
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-label="ตะกร้าสินค้า" aria-hidden="true">
+    <div class="drawer-head"><div><span>ตะกร้าของคุณ</span><small id="cartSummary">ยังไม่มีสินค้า</small></div><button class="close-button" id="closeCart">×</button></div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="empty-cart" id="emptyCart"><span data-icon="bag"></span><h3>ตะกร้ายังว่างอยู่</h3><p>ลองเลือกสินค้าที่คุณสนใจ แล้วกลับมาที่นี่อีกครั้ง</p><button class="button button-primary" id="emptyShop">เลือกซื้อสินค้า</button></div>
+    <div class="cart-footer" id="cartFooter">
+      <div><span>ยอดรวม</span><strong id="cartTotal">฿0</strong></div>
+      <button class="button button-primary button-full" id="checkoutButton">ดำเนินการชำระเงิน <span data-icon="arrow"></span></button>
+      <small><i data-icon="shield"></i> การชำระเงินของคุณได้รับการปกป้อง</small>
+    </div>
+  </aside>
+
+  <div class="modal-layer" id="modalLayer" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <section class="modal" id="authModal">
+      <button class="modal-close" data-close-modal>×</button>
+      <div class="modal-logo"><span class="brand-mark">N</span></div>
+      <div class="auth-tabs"><button class="active" data-auth="login">เข้าสู่ระบบ</button><button data-auth="register">สมัครสมาชิก</button></div>
+      <form id="authForm">
+        <div class="form-field"><label for="email">อีเมล</label><input id="email" type="email" placeholder="name@email.com" required></div>
+        <div class="form-field"><label for="password">รหัสผ่าน</label><input id="password" type="password" placeholder="อย่างน้อย 8 ตัวอักษร" minlength="8" required></div>
+        <div class="form-field register-only"><label for="confirmPassword">ยืนยันรหัสผ่าน</label><input id="confirmPassword" type="password" placeholder="กรอกรหัสผ่านอีกครั้ง" minlength="8"></div>
+        <div class="form-meta"><label><input type="checkbox"> จดจำฉันไว้</label><a href="#">ลืมรหัสผ่าน?</a></div>
+        <button class="button button-primary button-full" type="submit" id="authSubmit">เข้าสู่ระบบ</button>
+      </form>
+      <p class="modal-note">เมื่อดำเนินการต่อ ถือว่าคุณยอมรับข้อตกลงและนโยบายความเป็นส่วนตัว</p>
+    </section>
+    <section class="modal topup-modal" id="topupModal">
+      <button class="modal-close" data-close-modal>×</button>
+      <span class="kicker">เติมเครดิตเข้ากระเป๋า</span>
+      <h2>เลือกจำนวนเงิน</h2>
+      <p>เครดิตเข้าบัญชีอัตโนมัติหลังชำระสำเร็จ</p>
+      <div class="amount-grid"><button data-amount="100">฿100</button><button class="active" data-amount="300">฿300</button><button data-amount="500">฿500</button><button data-amount="1000">฿1,000</button></div>
+      <div class="custom-amount"><span>฿</span><input type="number" id="customAmount" value="300" min="20" aria-label="จำนวนเงิน"></div>
+      <button class="button button-primary button-full" id="confirmTopup">สร้าง QR พร้อมเพย์</button>
+      <small class="topup-safe"><i data-icon="shield"></i> ระบบตรวจสอบยอดอัตโนมัติและปลอดภัย</small>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"><span data-icon="check"></span><p>ดำเนินการสำเร็จ</p></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
