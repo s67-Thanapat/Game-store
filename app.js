@@ -1056,10 +1056,12 @@ document.getElementById("authForm").addEventListener("submit", (event) => {
       closeModal();
       if (response.user?.role === "admin") {
         showToast("เข้าสู่ระบบผู้ดูแลสำเร็จ เปิดโหมดแก้ไข");
-        // Enable edit mode for admin
-        if (!isEditMode) {
-          toggleEditMode();
-        }
+        // Enable edit mode for admin (after data loaded)
+        setTimeout(() => {
+          if (!isEditMode) {
+            toggleEditMode();
+          }
+        }, 100);
         return;
       }
       showToast(mode === "register" ? `สร้างบัญชีสำเร็จ ยินดีต้อนรับ ${response.user.name}` : `เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${response.user.name}`);

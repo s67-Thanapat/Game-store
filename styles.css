@@ -1163,7 +1163,7 @@ body.edit-mode-active {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .modal-field label {
@@ -1182,7 +1182,7 @@ body.edit-mode-active {
   border: 2px solid rgba(249, 115, 22, 0.5);
   border-radius: 8px;
   background: rgba(249, 115, 22, 0.1);
-  color: #fff;
+  color: rgba(100, 100, 100, 0.8);
   font-size: 14px;
   font-family: inherit;
   transition: all 0.2s ease;
