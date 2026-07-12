@@ -91,6 +91,32 @@ export default {
         );
       }
 
+      // POST /api/login - ตรวจสอบตัวตน
+      if (path === "/api/login" && request.method === "POST") {
+        const body = await request.json();
+        const { email, password } = body;
+
+        // ตรวจสอบ credentials
+        if (email === "admin" && password === "1234") {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              user: {
+                id: "admin",
+                email: "admin",
+                role: "admin"
+              }
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ error: "Invalid credentials" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // ไม่พบ endpoint
       return new Response(
         JSON.stringify({ error: "Not Found" }),
