@@ -1,4 +1,4 @@
-name = "nexora-api"
+name = "game-store-web"
 main = "worker.js"
 compatibility_date = "2024-01-01"
 workers_dev = true
