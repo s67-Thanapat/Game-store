@@ -13,58 +13,371 @@ const icons = {
   grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>'
 };
 
-document.querySelectorAll("[data-icon]").forEach(el => {
-  el.innerHTML = icons[el.dataset.icon] || "";
-});
-
-const products = [
-  { id: 1, name: "Stream Plus", category: "premium", categoryLabel: "แอปพรีเมียม", desc: "แพ็กเกจดูหนังและซีรีส์แบบส่วนตัว 30 วัน", price: 189, symbol: "S+", cover: "linear-gradient(145deg,#743848,#241425)", badge: "ขายดี" },
-  { id: 2, name: "Music Unlimited", category: "premium", categoryLabel: "แอปพรีเมียม", desc: "ฟังเพลงไม่มีโฆษณา คุณภาพเสียงสูง 30 วัน", price: 129, symbol: "M", cover: "linear-gradient(145deg,#186c54,#0d2823)", badge: "ยอดนิยม" },
-  { id: 3, name: "Creator Pro", category: "service", categoryLabel: "บริการออนไลน์", desc: "เครื่องมือออกแบบสำหรับครีเอเตอร์ 30 วัน", price: 159, symbol: "C", cover: "linear-gradient(145deg,#5b36a8,#22204e)", badge: "แนะนำ" },
-  { id: 4, name: "Game Credits 500", category: "game", categoryLabel: "เกม & ไอเทม", desc: "เครดิตเกมพร้อมใช้งาน ส่งโค้ดอัตโนมัติ", price: 220, symbol: "G", cover: "linear-gradient(145deg,#1a6280,#12213e)", badge: "ส่งไว" },
-  { id: 5, name: "Cloud Drive 2TB", category: "service", categoryLabel: "บริการออนไลน์", desc: "พื้นที่เก็บไฟล์บนคลาวด์ ใช้งานได้ 30 วัน", price: 99, symbol: "☁", cover: "linear-gradient(145deg,#32619a,#142642)", badge: "คุ้มค่า" },
-  { id: 6, name: "Battle Pass", category: "game", categoryLabel: "เกม & ไอเทม", desc: "ปลดล็อกรางวัลประจำซีซันและไอเทมพิเศษ", price: 299, symbol: "BP", cover: "linear-gradient(145deg,#8a5a1f,#322011)", badge: "ใหม่" },
-  { id: 7, name: "Office Suite", category: "service", categoryLabel: "บริการออนไลน์", desc: "ชุดโปรแกรมทำงานครบถ้วน ระยะเวลา 1 ปี", price: 490, symbol: "O", cover: "linear-gradient(145deg,#9a492f,#3a1b1a)", badge: "1 ปี" },
-  { id: 8, name: "Chat Premium", category: "premium", categoryLabel: "แอปพรีเมียม", desc: "ปลดล็อกฟีเจอร์แชตและโปรไฟล์พิเศษ 30 วัน", price: 139, symbol: "✦", cover: "linear-gradient(145deg,#4855a5,#211d4b)", badge: "ฮิต" }
-];
-
-const productGrid = document.getElementById("productGrid");
+const store = window.NEXORA_STORE;
+let storeState = store.loadState();
 let activeCategory = "all";
 let showAllProducts = false;
 let cart = JSON.parse(localStorage.getItem("nexora-cart") || "[]");
 
+const productGrid = document.getElementById("productGrid");
+const cartDrawer = document.getElementById("cartDrawer");
+const drawerBackdrop = document.getElementById("drawerBackdrop");
+const modalLayer = document.getElementById("modalLayer");
+const authModal = document.getElementById("authModal");
+const accountModal = document.getElementById("accountModal");
+const topupModal = document.getElementById("topupModal");
+const navAuth = document.getElementById("navAuth");
+const mobileAuthButton = document.getElementById("mobileAuthButton");
+const siteHeader = document.querySelector(".site-header");
+let authSession = store.loadAuthSession();
+let currentUser = authSession?.user || null;
+let authStatus = authSession?.token ? "loading" : "signed-out";
+
+function escapeHtml(value) {
+  return store.escapeHtml(value);
+}
+
+function renderIcons() {
+  document.querySelectorAll("[data-icon]").forEach((el) => {
+    el.innerHTML = icons[el.dataset.icon] || "";
+  });
+}
+
+function getInitials(value) {
+  return String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "U";
+}
+
+function getAvatarMarkup(user, className = "profile-avatar") {
+  const label = escapeHtml(getInitials(user?.name || user?.email));
+  const avatarUrl = String(user?.avatarUrl || "").trim();
+  if (avatarUrl) {
+    return `<span class="${className}"><img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(user?.name || user?.email || "User")}"></span>`;
+  }
+  return `<span class="${className}">${label}</span>`;
+}
+
+async function apiRequest(pathname, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
+  if (authSession?.token) {
+    headers.Authorization = `Bearer ${authSession.token}`;
+  }
+
+  const response = await fetch(pathname, {
+    ...options,
+    headers,
+  });
+
+  let data = null;
+  const text = await response.text();
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { message: text };
+    }
+  }
+
+  if (!response.ok) {
+    const error = new Error(data?.message || "Request failed");
+    error.statusCode = response.status;
+    error.details = data;
+    throw error;
+  }
+
+  return data;
+}
+
+function renderAuthControls() {
+  if (!navAuth || !mobileAuthButton) return;
+
+  if (!currentUser) {
+    navAuth.innerHTML = `
+      <button class="button button-soft desktop-login" data-open="login">เข้าสู่ระบบ</button>
+      <button class="button button-primary" data-open="register">สมัครสมาชิก</button>
+    `;
+    mobileAuthButton.dataset.open = "login";
+    mobileAuthButton.innerHTML = '<i data-icon="user"></i><span>บัญชี</span>';
+    renderIcons();
+    return;
+  }
+
+  const roleLabel = currentUser.role === "admin" ? "Admin" : "สมาชิก";
+  navAuth.innerHTML = `
+    ${currentUser.role === "admin" ? '<a class="button button-ghost nav-admin-link" href="admin.html">Admin</a>' : ""}
+    <button class="profile-chip" type="button" id="profileChip" data-open="account">
+      ${getAvatarMarkup(currentUser)}
+      <span class="profile-meta">
+        <strong>${escapeHtml(currentUser.name)}</strong>
+        <small>${escapeHtml(roleLabel)}</small>
+      </span>
+    </button>
+  `;
+  mobileAuthButton.dataset.open = "account";
+  mobileAuthButton.innerHTML = `${getAvatarMarkup(currentUser, "mobile-avatar")}<span>โปรไฟล์</span>`;
+  renderIcons();
+}
+
+function renderAccountModal() {
+  if (!accountModal) return;
+  const avatar = document.getElementById("accountAvatar");
+  const name = document.getElementById("accountName");
+  const email = document.getElementById("accountEmail");
+  const status = document.getElementById("accountStatus");
+  const adminLink = document.getElementById("accountAdminLink");
+  const logoutButton = document.getElementById("accountLogout");
+
+  if (!currentUser) {
+    avatar.innerHTML = "";
+    avatar.textContent = "G";
+    name.textContent = "Guest";
+    email.textContent = "ยังไม่ได้เข้าสู่ระบบ";
+    status.innerHTML = `<span>Guest</span>`;
+    adminLink.style.display = "none";
+    logoutButton.textContent = "เข้าสู่ระบบ";
+    logoutButton.dataset.action = "open-login";
+    return;
+  }
+
+  avatar.innerHTML = getAvatarMarkup(currentUser, "account-avatar-image");
+  name.textContent = currentUser.name;
+  email.textContent = currentUser.email;
+  status.innerHTML = `
+    <span>${currentUser.role === "admin" ? "Admin" : "Member"}</span>
+    <span>${currentUser.lastLoginAt ? `Last login ${new Date(currentUser.lastLoginAt).toLocaleString("th-TH")}` : "Active"}</span>
+  `;
+  adminLink.style.display = currentUser.role === "admin" ? "inline-flex" : "none";
+  logoutButton.textContent = "ออกจากระบบ";
+  logoutButton.dataset.action = "logout";
+}
+
+function syncAuthState(session) {
+  authSession = session || null;
+  authStatus = session?.token ? "signed-in" : "signed-out";
+  currentUser = session?.user || null;
+  store.setAuthSession(session);
+  store.setAdminAuthenticated(Boolean(currentUser && currentUser.role === "admin"));
+  renderAuthControls();
+  renderAccountModal();
+}
+
+async function refreshAuthSession() {
+  if (!authSession?.token) {
+    authStatus = "signed-out";
+    currentUser = null;
+    renderAuthControls();
+    renderAccountModal();
+    return;
+  }
+
+  try {
+    const response = await apiRequest("/api/me");
+    const nextSession = { token: authSession.token, user: response.user };
+    syncAuthState(nextSession);
+  } catch (error) {
+    // Only sign out / clear session if the server returned 401 (Unauthorized) or 403 (Forbidden)
+    if (error.statusCode === 401 || error.statusCode === 403) {
+      authStatus = "signed-out";
+      authSession = null;
+      currentUser = null;
+      store.clearAuthSession();
+      renderAuthControls();
+      renderAccountModal();
+    } else {
+      // Keep current user session if it is a network error or server is offline
+      console.warn("Auth check failed due to a network/server error. Session is kept active:", error);
+      authStatus = "signed-in";
+      renderAuthControls();
+      renderAccountModal();
+    }
+  }
+}
+
+function updateStoreText() {
+  const settings = storeState.settings;
+  document.title = `${settings.name} — Digital Store`;
+
+  document.querySelectorAll("[data-store-name]").forEach((el) => {
+    el.textContent = settings.name;
+  });
+  document.querySelectorAll("[data-store-tagline]").forEach((el) => {
+    el.textContent = settings.tagline;
+  });
+  document.querySelectorAll("[data-store-label]").forEach((el) => {
+    el.textContent = settings.bannerLabel;
+  });
+  document.querySelectorAll("[data-store-announcement]").forEach((el) => {
+    el.textContent = settings.announcement;
+  });
+  document.querySelectorAll("[data-store-footer]").forEach((el) => {
+    el.textContent = settings.footerNote;
+  });
+}
+
+function getProducts() {
+  return storeState.products;
+}
+
+function productCoverStyle(product) {
+  const pieces = [`--cover:${product.cover}`];
+  if (product.imageUrl) {
+    pieces.push(`background-image:url(${JSON.stringify(product.imageUrl)})`);
+    pieces.push("background-size:cover");
+    pieces.push("background-position:center");
+  }
+  return pieces.join(";");
+}
+
 function renderProducts() {
-  const filtered = products.filter(p => activeCategory === "all" || p.category === activeCategory);
-  productGrid.innerHTML = filtered.map((p, index) => `
+  const filtered = getProducts().filter((product) => activeCategory === "all" || product.category === activeCategory);
+  productGrid.innerHTML = filtered.map((product, index) => `
     <article class="product-card ${!showAllProducts && index > 3 ? "hidden" : ""}">
-      <div class="product-cover" style="--cover:${p.cover}">
-        <span class="product-badge">${p.badge}</span>
-        <span class="product-symbol">${p.symbol}</span>
+      <div class="product-cover ${product.imageUrl ? "has-image" : ""}" style="${productCoverStyle(product)}">
+        <span class="product-badge">${escapeHtml(product.badge)}</span>
+        <span class="product-symbol">${escapeHtml(product.symbol)}</span>
       </div>
       <div class="product-body">
-        <span class="product-category">${p.categoryLabel}</span>
-        <h3>${p.name}</h3>
-        <p>${p.desc}</p>
+        <span class="product-category">${escapeHtml(product.categoryLabel)}</span>
+        <h3>${escapeHtml(product.name)}</h3>
+        <p>${escapeHtml(product.desc)}</p>
         <div class="product-bottom">
-          <div class="price"><small>เริ่มต้น</small><strong>฿${p.price}</strong></div>
-          <button class="add-cart" data-add="${p.id}" aria-label="เพิ่ม ${p.name} ลงตะกร้า">${icons.plus}</button>
+          <div class="price"><small>เริ่มต้น</small><strong>฿${Number(product.price || 0).toLocaleString("th-TH")}</strong></div>
+          <button class="add-cart" data-add="${product.id}" aria-label="เพิ่ม ${escapeHtml(product.name)} ลงตะกร้า">${icons.plus}</button>
         </div>
       </div>
     </article>
   `).join("");
+
   document.getElementById("showAll").style.display = filtered.length <= 4 || showAllProducts ? "none" : "inline-flex";
 }
 
-document.getElementById("categoryTabs").addEventListener("click", e => {
-  const button = e.target.closest("[data-category]");
+function saveCart() {
+  localStorage.setItem("nexora-cart", JSON.stringify(cart));
+  renderCart();
+}
+
+function renderCart() {
+  const products = getProducts();
+  const count = cart.reduce((sum, item) => sum + item.qty, 0);
+  const total = cart.reduce((sum, item) => {
+    const product = products.find((p) => p.id === item.id);
+    return sum + (product?.price || 0) * item.qty;
+  }, 0);
+
+  document.getElementById("cartCount").textContent = count;
+  document.getElementById("mobileCartCount").textContent = count;
+  document.getElementById("cartSummary").textContent = count ? `${count} รายการในตะกร้า` : "ยังไม่มีสินค้า";
+  document.getElementById("cartTotal").textContent = `฿${total.toLocaleString("th-TH")}`;
+  document.getElementById("emptyCart").classList.toggle("show", !cart.length);
+  document.getElementById("cartFooter").classList.toggle("hide", !cart.length);
+  document.getElementById("cartItems").style.display = cart.length ? "block" : "none";
+  document.getElementById("cartItems").innerHTML = cart.map((item) => {
+    const product = products.find((p) => p.id === item.id);
+    if (!product) return "";
+    return `
+      <div class="cart-item">
+        <div class="cart-item-icon ${product.imageUrl ? "has-image" : ""}" style="${productCoverStyle(product)}">${escapeHtml(product.symbol)}</div>
+        <div>
+          <h4>${escapeHtml(product.name)}</h4>
+          <small>จำนวน ${item.qty} · พร้อมส่งทันที</small>
+        </div>
+        <div>
+          <strong>฿${(product.price * item.qty).toLocaleString("th-TH")}</strong>
+          <button class="remove-item" data-remove="${product.id}">ลบ</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function setCart(open) {
+  cartDrawer.classList.toggle("open", open);
+  drawerBackdrop.classList.toggle("open", open);
+  cartDrawer.setAttribute("aria-hidden", String(!open));
+  document.body.classList.toggle("locked", open);
+}
+
+function setAuthMode(mode) {
+  authModal.classList.toggle("register-mode", mode === "register");
+  document.querySelectorAll("[data-auth]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.auth === mode);
+  });
+  document.getElementById("authSubmit").textContent = mode === "register" ? "สร้างบัญชี" : "เข้าสู่ระบบ";
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const confirmPasswordInput = document.getElementById("confirmPassword");
+  emailInput.type = mode === "register" ? "email" : "text";
+  emailInput.placeholder = mode === "register" ? "name@email.com" : "admin หรืออีเมลของคุณ";
+  passwordInput.minLength = mode === "register" ? 8 : 0;
+  passwordInput.placeholder = mode === "register" ? "อย่างน้อย 8 ตัวอักษร" : "รหัสผ่าน";
+  confirmPasswordInput.required = mode === "register";
+  confirmPasswordInput.minLength = mode === "register" ? 8 : 0;
+  document.getElementById("name").required = mode === "register";
+  document.getElementById("avatarUrl").required = false;
+}
+
+function openModal(type) {
+  modalLayer.classList.add("open");
+  modalLayer.setAttribute("aria-hidden", "false");
+  authModal.classList.toggle("active", type === "login" || type === "register");
+  accountModal.classList.toggle("active", type === "account");
+  topupModal.classList.toggle("active", type === "topup");
+  if (type === "login" || type === "register") setAuthMode(type);
+  if (type === "account") renderAccountModal();
+  document.body.classList.add("locked");
+}
+
+function closeModal() {
+  modalLayer.classList.remove("open");
+  modalLayer.setAttribute("aria-hidden", "true");
+  authModal.classList.remove("active");
+  accountModal.classList.remove("active");
+  topupModal.classList.remove("active");
+  document.body.classList.remove("locked");
+}
+
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  toast.querySelector("p").textContent = message;
+  toast.classList.add("show");
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+function syncFromStorage() {
+  storeState = store.loadState();
+  updateStoreText();
+  renderProducts();
+  renderCart();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderIcons();
+  updateStoreText();
+  renderProducts();
+  renderCart();
+  syncAuthState(authSession);
+  refreshAuthSession();
+});
+
+document.getElementById("categoryTabs").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-category]");
   if (!button) return;
   activeCategory = button.dataset.category;
   showAllProducts = false;
-  document.querySelectorAll("[data-category]").forEach(b => b.classList.toggle("active", b === button));
+  document.querySelectorAll("[data-category]").forEach((item) => item.classList.toggle("active", item === button));
   renderProducts();
 });
 
-document.querySelectorAll("[data-category-jump]").forEach(button => {
+document.querySelectorAll("[data-category-jump]").forEach((button) => {
   button.addEventListener("click", () => {
     const target = document.querySelector(`[data-category="${button.dataset.categoryJump}"]`);
     if (target) target.click();
@@ -77,161 +390,186 @@ document.getElementById("showAll").addEventListener("click", () => {
   renderProducts();
 });
 
-productGrid.addEventListener("click", e => {
-  const button = e.target.closest("[data-add]");
+productGrid.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-add]");
   if (!button) return;
-  const product = products.find(p => p.id === Number(button.dataset.add));
-  const current = cart.find(item => item.id === product.id);
+  const product = getProducts().find((item) => item.id === Number(button.dataset.add));
+  if (!product) return;
+  const current = cart.find((item) => item.id === product.id);
   if (current) current.qty += 1;
   else cart.push({ id: product.id, qty: 1 });
   saveCart();
   showToast(`เพิ่ม ${product.name} ลงตะกร้าแล้ว`);
 });
 
-function saveCart() {
-  localStorage.setItem("nexora-cart", JSON.stringify(cart));
-  renderCart();
-}
-
-function renderCart() {
-  const count = cart.reduce((sum, item) => sum + item.qty, 0);
-  const total = cart.reduce((sum, item) => {
-    const product = products.find(p => p.id === item.id);
-    return sum + (product?.price || 0) * item.qty;
-  }, 0);
-  document.getElementById("cartCount").textContent = count;
-  document.getElementById("mobileCartCount").textContent = count;
-  document.getElementById("cartSummary").textContent = count ? `${count} รายการในตะกร้า` : "ยังไม่มีสินค้า";
-  document.getElementById("cartTotal").textContent = `฿${total.toLocaleString("th-TH")}`;
-  document.getElementById("emptyCart").classList.toggle("show", !cart.length);
-  document.getElementById("cartFooter").classList.toggle("hide", !cart.length);
-  document.getElementById("cartItems").style.display = cart.length ? "block" : "none";
-  document.getElementById("cartItems").innerHTML = cart.map(item => {
-    const p = products.find(product => product.id === item.id);
-    if (!p) return "";
-    return `<div class="cart-item">
-      <div class="cart-item-icon" style="--cover:${p.cover}">${p.symbol}</div>
-      <div><h4>${p.name}</h4><small>จำนวน ${item.qty} · พร้อมส่งทันที</small></div>
-      <div><strong>฿${(p.price * item.qty).toLocaleString("th-TH")}</strong><button class="remove-item" data-remove="${p.id}">ลบ</button></div>
-    </div>`;
-  }).join("");
-}
-
-document.getElementById("cartItems").addEventListener("click", e => {
-  const button = e.target.closest("[data-remove]");
+document.getElementById("cartItems").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove]");
   if (!button) return;
-  cart = cart.filter(item => item.id !== Number(button.dataset.remove));
+  cart = cart.filter((item) => item.id !== Number(button.dataset.remove));
   saveCart();
 });
 
-const cartDrawer = document.getElementById("cartDrawer");
-const drawerBackdrop = document.getElementById("drawerBackdrop");
-function setCart(open) {
-  cartDrawer.classList.toggle("open", open);
-  drawerBackdrop.classList.toggle("open", open);
-  cartDrawer.setAttribute("aria-hidden", String(!open));
-  document.body.classList.toggle("locked", open);
-}
-["cartButton", "mobileCart"].forEach(id => document.getElementById(id).addEventListener("click", () => setCart(true)));
+["cartButton", "mobileCart"].forEach((id) => {
+  document.getElementById(id).addEventListener("click", () => setCart(true));
+});
 document.getElementById("closeCart").addEventListener("click", () => setCart(false));
 drawerBackdrop.addEventListener("click", () => setCart(false));
+
 document.getElementById("emptyShop").addEventListener("click", () => {
   setCart(false);
-  document.getElementById("products").scrollIntoView();
+  document.getElementById("products").scrollIntoView({ behavior: "smooth" });
 });
+
 document.getElementById("checkoutButton").addEventListener("click", () => {
   setCart(false);
-  openModal("login");
-  showToast("กรุณาเข้าสู่ระบบก่อนชำระเงิน");
+  if (!currentUser) {
+    openModal("login");
+    showToast("กรุณาเข้าสู่ระบบก่อนชำระเงิน");
+    return;
+  }
+  showToast(`พร้อมดำเนินการต่อในนาม ${currentUser.name}`);
 });
 
-const modalLayer = document.getElementById("modalLayer");
-const authModal = document.getElementById("authModal");
-const topupModal = document.getElementById("topupModal");
-function openModal(type) {
-  modalLayer.classList.add("open");
-  modalLayer.setAttribute("aria-hidden", "false");
-  authModal.classList.toggle("active", type === "login" || type === "register");
-  topupModal.classList.toggle("active", type === "topup");
-  if (type === "login" || type === "register") setAuthMode(type);
-  document.body.classList.add("locked");
-}
-function closeModal() {
-  modalLayer.classList.remove("open");
-  modalLayer.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("locked");
-}
-document.querySelectorAll("[data-open]").forEach(button => button.addEventListener("click", () => openModal(button.dataset.open)));
-document.querySelectorAll("[data-close-modal]").forEach(button => button.addEventListener("click", closeModal));
+document.addEventListener("click", (event) => {
+  const openButton = event.target.closest("[data-open]");
+  if (openButton) {
+    event.preventDefault();
+    openModal(openButton.dataset.open);
+    return;
+  }
 
-function setAuthMode(mode) {
-  authModal.classList.toggle("register-mode", mode === "register");
-  document.querySelectorAll("[data-auth]").forEach(b => b.classList.toggle("active", b.dataset.auth === mode));
-  document.getElementById("authSubmit").textContent = mode === "register" ? "สร้างบัญชี" : "เข้าสู่ระบบ";
-  document.getElementById("confirmPassword").required = mode === "register";
-}
-document.querySelector(".auth-tabs").addEventListener("click", e => {
-  const button = e.target.closest("[data-auth]");
+  const closeButton = event.target.closest("[data-close-modal]");
+  if (closeButton) {
+    closeModal();
+  }
+});
+
+document.querySelector(".auth-tabs").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-auth]");
   if (button) setAuthMode(button.dataset.auth);
 });
-document.getElementById("authForm").addEventListener("submit", e => {
-  e.preventDefault();
-  closeModal();
-  showToast(authModal.classList.contains("register-mode") ? "สร้างบัญชีตัวอย่างสำเร็จ" : "เข้าสู่ระบบตัวอย่างสำเร็จ");
+
+document.getElementById("authForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const mode = authModal.classList.contains("register-mode") ? "register" : "login";
+  const payload = {
+    email: document.getElementById("email").value.trim(),
+    password: document.getElementById("password").value,
+  };
+
+  if (mode === "register") {
+    payload.name = document.getElementById("name").value.trim();
+    payload.avatarUrl = document.getElementById("avatarUrl").value.trim();
+    payload.confirmPassword = document.getElementById("confirmPassword").value;
+  }
+
+  const submitButton = document.getElementById("authSubmit");
+  submitButton.disabled = true;
+
+  (async () => {
+    try {
+      const response = await apiRequest(`/api/${mode}`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      syncAuthState({ token: response.token, user: response.user });
+      closeModal();
+      if (response.user?.role === "admin") {
+        showToast("เข้าสู่ระบบผู้ดูแลสำเร็จ กำลังเปิดหน้าจัดการ");
+        setTimeout(() => {
+          window.location.href = "admin.html";
+        }, 350);
+        return;
+      }
+      showToast(mode === "register" ? `สร้างบัญชีสำเร็จ ยินดีต้อนรับ ${response.user.name}` : `เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${response.user.name}`);
+    } catch (error) {
+      showToast(error.message || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+    } finally {
+      submitButton.disabled = false;
+    }
+  })();
 });
 
-document.querySelector(".amount-grid").addEventListener("click", e => {
-  const button = e.target.closest("[data-amount]");
+document.getElementById("accountLogout").addEventListener("click", async () => {
+  if (!currentUser) {
+    closeModal();
+    openModal("login");
+    return;
+  }
+
+  try {
+    await apiRequest("/api/logout", { method: "POST", body: JSON.stringify({ token: authSession?.token || "" }) });
+  } catch {
+    // Logout is best-effort; clear local state either way.
+  }
+
+  syncAuthState(null);
+  closeModal();
+  showToast("ออกจากระบบแล้ว");
+});
+
+document.querySelector(".amount-grid").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-amount]");
   if (!button) return;
-  document.querySelectorAll("[data-amount]").forEach(b => b.classList.toggle("active", b === button));
+  document.querySelectorAll("[data-amount]").forEach((item) => item.classList.toggle("active", item === button));
   document.getElementById("customAmount").value = button.dataset.amount;
 });
+
 document.getElementById("confirmTopup").addEventListener("click", () => {
   const amount = Math.max(20, Number(document.getElementById("customAmount").value || 0));
   closeModal();
   showToast(`สร้างรายการเติมเงิน ฿${amount.toLocaleString("th-TH")} แล้ว`);
 });
 
-document.querySelectorAll(".accordion article button").forEach(button => button.addEventListener("click", () => {
-  const article = button.closest("article");
-  document.querySelectorAll(".accordion article").forEach(item => {
-    if (item !== article) item.classList.remove("open");
+document.querySelectorAll(".accordion article button").forEach((button) => {
+  button.addEventListener("click", () => {
+    const article = button.closest("article");
+    document.querySelectorAll(".accordion article").forEach((item) => {
+      if (item !== article) item.classList.remove("open");
+    });
+    article.classList.toggle("open");
   });
-  article.classList.toggle("open");
-}));
+});
 
-let toastTimer;
-function showToast(message) {
-  const toast = document.getElementById("toast");
-  toast.querySelector("p").textContent = message;
-  toast.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
-}
-document.querySelectorAll("[data-toast]").forEach(button => button.addEventListener("click", e => {
-  if (button.getAttribute("href") === "#") e.preventDefault();
-  showToast(button.dataset.toast);
-}));
+document.querySelectorAll("[data-toast]").forEach((button) => {
+  button.addEventListener("click", (event) => {
+    if (button.getAttribute("href") === "#") event.preventDefault();
+    showToast(button.dataset.toast);
+  });
+});
 
 window.addEventListener("scroll", () => {
-  document.querySelector(".site-header").classList.toggle("scrolled", scrollY > 20);
+  siteHeader.classList.toggle("scrolled", window.scrollY > 20);
 });
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape") {
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
     closeModal();
     setCart(false);
   }
 });
 
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
     if (entry.isIntersecting) {
       entry.target.classList.add("visible");
       observer.unobserve(entry.target);
     }
   });
-}, { threshold: .12 });
-document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+}, { threshold: 0.12 });
 
-renderProducts();
-renderCart();
+document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
+
+window.addEventListener("storage", (event) => {
+  if (event.key === store.storageKey) {
+    syncFromStorage();
+  }
+  if (event.key === store.authSessionKey) {
+    authSession = store.loadAuthSession();
+    currentUser = authSession?.user || null;
+    renderAuthControls();
+    renderAccountModal();
+  }
+});
+
+syncFromStorage();

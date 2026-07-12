@@ -1,0 +1,4 @@
+.env
+.env.local
+.nexora-auth-users.json
+node_modules/

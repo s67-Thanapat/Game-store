@@ -19,7 +19,7 @@
     <div class="container nav">
       <a class="brand" href="#home" aria-label="NEXORA home">
         <span class="brand-mark">N</span>
-        <span>NEXORA</span>
+        <span data-store-name>NEXORA</span>
       </a>
 
       <nav class="nav-links" aria-label="เมนูหลัก">
@@ -34,8 +34,7 @@
           <span data-icon="bag"></span>
           <b id="cartCount">0</b>
         </button>
-        <button class="button button-soft desktop-login" data-open="login">เข้าสู่ระบบ</button>
-        <button class="button button-primary" data-open="register">สมัครสมาชิก</button>
+        <div class="nav-auth" id="navAuth"></div>
       </div>
     </div>
   </header>
@@ -47,8 +46,8 @@
           <div class="banner-pattern"></div>
           <div class="banner-copy">
             <span>WELCOME TO</span>
-            <h1>NEXORA</h1>
-            <p>DIGITAL STORE</p>
+            <h1 data-store-name>NEXORA</h1>
+            <p data-store-tagline>DIGITAL STORE</p>
             <a href="#products">เลือกซื้อสินค้า <span data-icon="arrow"></span></a>
           </div>
           <div class="banner-orbit orbit-one">N</div>
@@ -59,7 +58,7 @@
 
         <div class="notice-bar reveal">
           <span class="notice-label">ประกาศ</span>
-          <div class="notice-track"><b>●</b> ยินดีต้อนรับสู่ NEXORA ร้านค้าดิจิทัลอัตโนมัติ เปิดให้บริการตลอด 24 ชั่วโมง</div>
+          <div class="notice-track"><b>●</b> <span data-store-announcement>ยินดีต้อนรับสู่ NEXORA ร้านค้าดิจิทัลอัตโนมัติ เปิดให้บริการตลอด 24 ชั่วโมง</span></div>
         </div>
 
         <div class="store-stats reveal">
@@ -196,8 +195,8 @@
   <footer class="footer">
     <div class="container footer-grid">
       <div>
-        <a class="brand" href="#home"><span class="brand-mark">N</span><span>NEXORA</span></a>
-        <p>ร้านค้าดิจิทัลที่ให้ความสำคัญกับความเร็ว ความปลอดภัย และประสบการณ์ที่ดีของคุณ</p>
+        <a class="brand" href="#home"><span class="brand-mark">N</span><span data-store-name>NEXORA</span></a>
+        <p data-store-footer>ร้านค้าดิจิทัลที่ให้ความสำคัญกับความเร็ว ความปลอดภัย และประสบการณ์ที่ดีของคุณ</p>
       </div>
       <div><h4>เมนู</h4><a href="#home">หน้าหลัก</a><a href="#products">สินค้า</a><a href="#how">วิธีสั่งซื้อ</a></div>
       <div><h4>ช่วยเหลือ</h4><a href="#faq">คำถามที่พบบ่อย</a><a href="#" data-toast="เปิดเงื่อนไขการรับประกัน">การรับประกัน</a><a href="#" data-toast="เปิดข้อตกลงการใช้งาน">ข้อตกลงการใช้งาน</a></div>
@@ -211,7 +210,7 @@
     <a href="#products"><i data-icon="grid"></i><span>สินค้า</span></a>
     <button data-open="topup"><i data-icon="wallet"></i><span>เติมเงิน</span></button>
     <button id="mobileCart"><i data-icon="bag"></i><span>ตะกร้า</span><b id="mobileCartCount">0</b></button>
-    <button data-open="login"><i data-icon="user"></i><span>บัญชี</span></button>
+    <button id="mobileAuthButton" data-open="login"><i data-icon="user"></i><span>บัญชี</span></button>
   </nav>
 
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
@@ -233,13 +232,32 @@
       <div class="modal-logo"><span class="brand-mark">N</span></div>
       <div class="auth-tabs"><button class="active" data-auth="login">เข้าสู่ระบบ</button><button data-auth="register">สมัครสมาชิก</button></div>
       <form id="authForm">
-        <div class="form-field"><label for="email">อีเมล</label><input id="email" type="email" placeholder="name@email.com" required></div>
-        <div class="form-field"><label for="password">รหัสผ่าน</label><input id="password" type="password" placeholder="อย่างน้อย 8 ตัวอักษร" minlength="8" required></div>
-        <div class="form-field register-only"><label for="confirmPassword">ยืนยันรหัสผ่าน</label><input id="confirmPassword" type="password" placeholder="กรอกรหัสผ่านอีกครั้ง" minlength="8"></div>
+        <div class="form-field register-only"><label for="name">ชื่อที่แสดง</label><input id="name" type="text" placeholder="ชื่อบนโปรไฟล์" minlength="2"></div>
+        <div class="form-field register-only"><label for="avatarUrl">ลิงก์รูปโปรไฟล์</label><input id="avatarUrl" type="url" placeholder="https://example.com/avatar.jpg"></div>
+        <div class="form-field"><label for="email">อีเมล / รหัสแอดมิน</label><input id="email" type="text" placeholder="name@email.com" required></div>
+        <div class="form-field"><label for="password">รหัสผ่าน</label><input id="password" type="password" placeholder="รหัสผ่าน" required></div>
+        <div class="form-field register-only"><label for="confirmPassword">ยืนยันรหัสผ่าน</label><input id="confirmPassword" type="password" placeholder="กรอกรหัสผ่านอีกครั้ง"></div>
         <div class="form-meta"><label><input type="checkbox"> จดจำฉันไว้</label><a href="#">ลืมรหัสผ่าน?</a></div>
         <button class="button button-primary button-full" type="submit" id="authSubmit">เข้าสู่ระบบ</button>
       </form>
       <p class="modal-note">เมื่อดำเนินการต่อ ถือว่าคุณยอมรับข้อตกลงและนโยบายความเป็นส่วนตัว</p>
+    </section>
+    <section class="modal account-modal" id="accountModal">
+      <button class="modal-close" data-close-modal>Ã—</button>
+      <div class="account-card">
+        <div class="account-avatar" id="accountAvatar"></div>
+        <div class="account-meta">
+          <span class="kicker">ACCOUNT</span>
+          <h2 id="accountName">Guest</h2>
+          <p id="accountEmail">-</p>
+        </div>
+        <div class="account-status" id="accountStatus"></div>
+        <div class="account-actions">
+          <a class="button button-ghost button-full" id="accountAdminLink" href="admin.html">Admin</a>
+          <button class="button button-primary button-full" id="accountLogout">ออกจากระบบ</button>
+        </div>
+        <p class="account-note">ข้อมูลบัญชีจะถูกซิงก์จาก Notion เมื่อคุณใช้งานระบบจริง</p>
+      </div>
     </section>
     <section class="modal topup-modal" id="topupModal">
       <button class="modal-close" data-close-modal>×</button>
@@ -255,6 +273,7 @@
 
   <div class="toast" id="toast"><span data-icon="check"></span><p>ดำเนินการสำเร็จ</p></div>
 
+  <script src="store-data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

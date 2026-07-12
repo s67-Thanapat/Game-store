@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f7f7f8">
+  <title>NEXORA — Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-page">
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="index.html" aria-label="NEXORA home">
+        <span class="brand-mark">N</span>
+        <span data-store-name>NEXORA</span>
+      </a>
+
+      <nav class="nav-links" aria-label="เมนูผู้ดูแล">
+        <a href="index.html">หน้าร้าน</a>
+        <a class="active" href="#settingsPanel">ตั้งค่าร้าน</a>
+        <a href="#productsPanel">สินค้า</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a class="button button-ghost" href="index.html">ดูหน้าเว็บ</a>
+        <button class="button button-soft" id="logoutButtonTop">ออกจากระบบ</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-shell">
+    <section id="adminDashboard">
+      <div class="container">
+        <div class="admin-hero store-banner">
+          <div class="banner-pattern"></div>
+          <div class="banner-copy">
+            <span data-store-label>WELCOME TO</span>
+            <h1 data-store-name>NEXORA</h1>
+            <p data-store-tagline>DIGITAL STORE</p>
+            <a href="index.html">เปิดหน้าร้าน <span data-icon="arrow"></span></a>
+          </div>
+          <div class="banner-orbit orbit-one">A</div>
+          <div class="banner-orbit orbit-two">D</div>
+          <div class="banner-device device-one"><i data-icon="grid"></i></div>
+          <div class="banner-device device-two"><i data-icon="bag"></i></div>
+        </div>
+
+        <div class="admin-hero-meta">
+          <article><small>ชื่อร้าน</small><strong id="summaryStoreName">NEXORA</strong></article>
+          <article><small>สินค้าทั้งหมด</small><strong id="summaryProductCount">8 รายการ</strong></article>
+          <article><small>ราคาเฉลี่ย</small><strong id="summaryAveragePrice">฿0</strong></article>
+          <article><small>สถานะ</small><strong>พร้อมบันทึก</strong></article>
+        </div>
+
+        <div class="admin-grid">
+          <aside class="admin-sidebar">
+            <a class="admin-brand" href="index.html">
+              <span class="brand-mark">N</span>
+              <div>
+                <strong data-store-name>NEXORA</strong>
+                <small class="admin-help">แผงควบคุมผู้ดูแล</small>
+              </div>
+            </a>
+
+            <p class="admin-lock-note">ระบบหลักของเว็บถูกล็อกไว้แล้ว แก้ได้เฉพาะข้อมูลร้านในกรอบที่อนุญาต เช่น ชื่อร้าน รายการสินค้า ราคา และรูปภาพเท่านั้น</p>
+
+            <nav class="admin-nav" id="adminNav">
+              <button class="active" type="button" data-tab-target="settings">ตั้งค่าร้าน</button>
+              <button type="button" data-tab-target="products">จัดการสินค้า</button>
+              <a href="#settingsPanel">กลับไปด้านบน</a>
+            </nav>
+
+            <div class="admin-actions">
+              <button class="button button-primary button-full" id="saveButton" type="button">บันทึกข้อมูล</button>
+              <button class="button button-soft button-full" id="logoutButton" type="button">ออกจากระบบ</button>
+            </div>
+          </aside>
+
+          <div class="admin-content">
+            <article class="admin-panel" id="settingsPanel">
+              <div class="admin-panel-head">
+                <div>
+                  <span class="kicker">STORE SETTINGS</span>
+                  <h3>ข้อมูลร้านที่แสดงบนหน้าเว็บ</h3>
+                  <p>ส่วนนี้จะอัปเดตบนหน้า index ทันทีเมื่อบันทึก</p>
+                </div>
+                <div class="admin-top-actions">
+                  <button class="button button-ghost" id="resetSettingsButton" type="button">คืนค่ามาตรฐาน</button>
+                </div>
+              </div>
+
+              <div class="admin-form-grid">
+                <div class="admin-field">
+                  <label for="storeName">ชื่อร้าน</label>
+                  <input type="text" id="storeName" placeholder="NEXORA">
+                </div>
+                <div class="admin-field">
+                  <label for="storeTagline">คำโปรย</label>
+                  <input type="text" id="storeTagline" placeholder="DIGITAL STORE">
+                </div>
+                <div class="admin-field wide">
+                  <label for="bannerLabel">ข้อความบนแบนเนอร์</label>
+                  <input type="text" id="bannerLabel" placeholder="WELCOME TO">
+                </div>
+                <div class="admin-field wide">
+                  <label for="announcement">ประกาศบนหน้าเว็บ</label>
+                  <textarea id="announcement" placeholder="ข้อความประกาศร้าน"></textarea>
+                </div>
+                <div class="admin-field wide">
+                  <label for="footerNote">ข้อความท้ายเว็บ</label>
+                  <textarea id="footerNote" placeholder="ข้อความท้ายเว็บ"></textarea>
+                </div>
+              </div>
+            </article>
+
+            <article class="admin-panel" id="productsPanel">
+              <div class="admin-panel-head">
+                <div>
+                  <span class="kicker">PRODUCT MANAGER</span>
+                  <h3>รายการสินค้า</h3>
+                  <p>เลือกหมวดสินค้าและแก้ชื่อ ราคา รูปภาพ และป้ายสถานะได้</p>
+                </div>
+              </div>
+
+              <!-- Category Tabs -->
+              <div class="admin-category-filter">
+                <div class="category-tabs" id="categoryTabs"></div>
+                <button class="button button-ghost" id="addCategoryButton" type="button">+ เพิ่มหมวด</button>
+              </div>
+
+              <div class="admin-status">
+                <span>แก้ไขได้ทันที</span>
+                <span>บันทึกลง localStorage</span>
+                <span>หน้า index อ่านค่าชุดเดียวกัน</span>
+              </div>
+
+              <div class="admin-product-list" id="productList"></div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"><span data-icon="check"></span><p>บันทึกข้อมูลเรียบร้อย</p></div>
+
+  <script src="store-data.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
