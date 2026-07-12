@@ -19,6 +19,10 @@ let activeCategory = "all";
 let showAllProducts = false;
 let cart = JSON.parse(localStorage.getItem("nexora-cart") || "[]");
 
+// Edit mode
+let isEditMode = false;
+let editState = null; // Temporary state for editing
+
 const productGrid = document.getElementById("productGrid");
 const cartDrawer = document.getElementById("cartDrawer");
 const drawerBackdrop = document.getElementById("drawerBackdrop");
@@ -115,7 +119,7 @@ function renderAuthControls() {
 
   const roleLabel = currentUser.role === "admin" ? "Admin" : "สมาชิก";
   navAuth.innerHTML = `
-    ${currentUser.role === "admin" ? '<a class="button button-ghost nav-admin-link" href="admin.html">Admin</a>' : ""}
+    ${currentUser.role === "admin" ? '<button class="button button-soft nav-edit-toggle" id="editToggle">Edit</button>' : ""}
     <button class="profile-chip" type="button" id="profileChip" data-open="account">
       ${getAvatarMarkup(currentUser)}
       <span class="profile-meta">
@@ -226,7 +230,7 @@ function updateStoreText() {
 }
 
 function getProducts() {
-  return storeState.products;
+  return editState ? editState.products : storeState.products;
 }
 
 function productCoverStyle(product) {
@@ -240,24 +244,46 @@ function productCoverStyle(product) {
 }
 
 function renderProducts() {
-  const filtered = getProducts().filter((product) => activeCategory === "all" || product.category === activeCategory);
-  productGrid.innerHTML = filtered.map((product, index) => `
-    <article class="product-card ${!showAllProducts && index > 3 ? "hidden" : ""}">
+  const products = editState ? editState.products : storeState.products;
+  const filtered = products.filter((product) => activeCategory === "all" || product.category === activeCategory);
+
+  let html = filtered.map((product, index) => `
+    <article class="product-card ${!showAllProducts && index > 3 ? "hidden" : ""} ${isEditMode ? "edit-mode" : ""}">
       <div class="product-cover ${product.imageUrl ? "has-image" : ""}" style="${productCoverStyle(product)}">
         <span class="product-badge">${escapeHtml(product.badge)}</span>
         <span class="product-symbol">${escapeHtml(product.symbol)}</span>
+        ${isEditMode ? `<button class="product-delete" data-delete="${product.id}" title="ลบสินค้า">×</button>` : ""}
       </div>
       <div class="product-body">
         <span class="product-category">${escapeHtml(product.categoryLabel)}</span>
-        <h3>${escapeHtml(product.name)}</h3>
-        <p>${escapeHtml(product.desc)}</p>
+        <h3 class="product-name-edit">${escapeHtml(product.name)}</h3>
+        <p class="product-desc-edit">${escapeHtml(product.desc)}</p>
         <div class="product-bottom">
           <div class="price"><small>เริ่มต้น</small><strong>฿${Number(product.price || 0).toLocaleString("th-TH")}</strong></div>
-          <button class="add-cart" data-add="${product.id}" aria-label="เพิ่ม ${escapeHtml(product.name)} ลงตะกร้า">${icons.plus}</button>
+          <button class="add-cart" data-add="${product.id}" aria-label="เพิ่ม ${escapeHtml(product.name)} ลงตะกร้า" ${isEditMode ? "disabled" : ""}>${icons.plus}</button>
         </div>
       </div>
     </article>
   `).join("");
+
+  // Add product card (only in edit mode)
+  if (isEditMode) {
+    html += `
+      <article class="product-card add-product-card">
+        <div class="add-product-cover">
+          <button id="addProductCardBtn" class="add-product-btn" title="เพิ่มสินค้าใหม่">+</button>
+        </div>
+        <div class="product-body">
+          <span class="product-category">สินค้าใหม่</span>
+          <h3>เพิ่มสินค้า</h3>
+          <p>คลิกเพื่อเพิ่มสินค้าลงร้าน</p>
+        </div>
+      </article>
+    `;
+  }
+
+  productGrid.innerHTML = html;
+  renderIcons();
 
   document.getElementById("showAll").style.display = filtered.length <= 4 || showAllProducts ? "none" : "inline-flex";
 }
@@ -355,11 +381,474 @@ function showToast(message) {
   showToast.timer = setTimeout(() => toast.classList.remove("show"), 2600);
 }
 
+function openAddProductModal() {
+  if (!editState) return;
+
+  const modal = document.getElementById("addProductModal");
+  if (!modal) {
+    createAddProductModal();
+    return;
+  }
+
+  modal.classList.add("active");
+  document.getElementById("addProductModalLayer").classList.add("open");
+  document.body.classList.add("locked");
+
+  // Reset form
+  document.getElementById("newProductForm").reset();
+}
+
+function closeAddProductModal() {
+  const modal = document.getElementById("addProductModal");
+  if (modal) modal.classList.remove("active");
+  const modalLayer = document.getElementById("addProductModalLayer");
+  if (modalLayer) modalLayer.classList.remove("open");
+  document.body.classList.remove("locked");
+}
+
+function createAddProductModal() {
+  // Create separate modal layer for add product
+  let modalLayer = document.getElementById("addProductModalLayer");
+  if (!modalLayer) {
+    modalLayer = document.createElement("div");
+    modalLayer.id = "addProductModalLayer";
+    modalLayer.className = "modal-layer";
+    modalLayer.setAttribute("aria-hidden", "true");
+    document.body.appendChild(modalLayer);
+  }
+
+  // Create backdrop
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.setAttribute("data-close-modal", "");
+  backdrop.addEventListener("click", closeAddProductModal);
+  modalLayer.appendChild(backdrop);
+
+  // Create modal
+  const modal = document.createElement("section");
+  modal.id = "addProductModal";
+  modal.className = "modal add-product-modal";
+  modal.innerHTML = `
+    <button class="modal-close" data-close-modal>×</button>
+    <span class="kicker">ADD PRODUCT</span>
+    <h2>เพิ่มสินค้าใหม่</h2>
+    <form id="newProductForm">
+      <div class="modal-field">
+        <label for="newProductName">ชื่อสินค้า *</label>
+        <input type="text" id="newProductName" required placeholder="ชื่อสินค้า">
+      </div>
+      <div class="modal-field">
+        <label for="newProductPrice">ราคา *</label>
+        <input type="number" id="newProductPrice" required placeholder="ราคา" min="0">
+      </div>
+      <div class="modal-field">
+        <label for="newProductCategory">หมวดหมู่ *</label>
+        <select id="newProductCategory" required>
+          <option value="">เลือกหมวดหมู่</option>
+          <option value="premium">แอปพรีเมียม</option>
+          <option value="game">เกม & ไอเท็ม</option>
+          <option value="service">บริการออนไลน์</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label for="newProductDesc">คำอธิบาย</label>
+        <textarea id="newProductDesc" placeholder="คำอธิบายสินค้า"></textarea>
+      </div>
+      <div class="modal-field">
+        <label for="newProductBadge">ป้าย</label>
+        <input type="text" id="newProductBadge" placeholder="เช่น ขายดี, แนะนำ">
+      </div>
+      <div class="modal-field">
+        <label for="newProductSymbol">สัญลักษณ์</label>
+        <input type="text" id="newProductSymbol" placeholder="เช่น ★, ★★" maxlength="3">
+      </div>
+      <button type="submit" class="button button-primary button-full">เพิ่มสินค้า</button>
+    </form>
+  `;
+  modal.querySelector(".modal-close").addEventListener("click", closeAddProductModal);
+  modalLayer.appendChild(modal);
+
+  document.getElementById("newProductForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    addNewProduct();
+  });
+}
+
+function addNewProduct() {
+  if (!editState) return;
+
+  const name = document.getElementById("newProductName").value.trim();
+  const price = Number(document.getElementById("newProductPrice").value);
+  const category = document.getElementById("newProductCategory").value;
+  const desc = document.getElementById("newProductDesc").value.trim();
+  const badge = document.getElementById("newProductBadge").value.trim() || "ใหม่";
+  const symbol = document.getElementById("newProductSymbol").value.trim() || "N";
+
+  if (!name || !price) {
+    showToast("กรุณากรอกข้อมูลให้ครบ");
+    return;
+  }
+
+  const newProduct = {
+    id: Math.max(0, ...editState.products.map(p => p.id)) + 1,
+    name,
+    category,
+    categoryLabel: store.categoryLabels[category] || category,
+    desc,
+    price,
+    symbol,
+    cover: `linear-gradient(145deg,${["#743848", "#186c54", "#5b36a8"][["premium", "game", "service"].indexOf(category)]},${["#241425", "#0d2823", "#22204e"][["premium", "game", "service"].indexOf(category)]})`,
+    imageUrl: "",
+    badge,
+  };
+
+  editState.products.push(newProduct);
+  renderProducts();
+  closeAddProductModal();
+  showToast(`เพิ่ม ${name} เรียบร้อย`);
+}
+
 function syncFromStorage() {
   storeState = store.loadState();
   updateStoreText();
   renderProducts();
   renderCart();
+}
+
+// Edit mode functions
+function toggleEditMode() {
+  if (!currentUser || currentUser.role !== "admin") return;
+
+  isEditMode = !isEditMode;
+
+  if (isEditMode) {
+    editState = JSON.parse(JSON.stringify(storeState)); // Clone state
+    enableEditMode();
+  } else {
+    editState = null;
+    disableEditMode();
+  }
+
+  updateEditToggleButton();
+}
+
+function updateEditToggleButton() {
+  const editToggle = document.getElementById("editToggle");
+  if (editToggle) {
+    editToggle.textContent = isEditMode ? "Done" : "Edit";
+  }
+}
+
+function enableEditMode() {
+  document.body.classList.add("edit-mode-active");
+
+  // Make text editable
+  makeStoreTextEditable();
+
+  // Add category edit controls
+  addCategoryEditControls();
+
+  renderProducts();
+}
+
+function disableEditMode() {
+  document.body.classList.remove("edit-mode-active");
+  const editToggle = document.getElementById("editToggle");
+  if (editToggle) editToggle.textContent = "Edit";
+
+  // Remove edit controls
+  const editControls = document.getElementById("categoryEditControls");
+  if (editControls) editControls.remove();
+
+  // Restore category tabs structure
+  const categoryTabs = document.getElementById("categoryTabs");
+  const tabsWrapper = categoryTabs?.querySelector(".tabs-wrapper");
+  if (tabsWrapper) {
+    // Move buttons back to direct children of categoryTabs
+    while (tabsWrapper.firstChild) {
+      categoryTabs.insertBefore(tabsWrapper.firstChild, tabsWrapper);
+    }
+    tabsWrapper.remove();
+  }
+
+  removeEditableElements();
+  renderProducts();
+}
+
+function makeStoreTextEditable() {
+  const settings = editState.settings;
+
+  // Store name
+  document.querySelectorAll("[data-store-name]").forEach((el) => {
+    el.contentEditable = true;
+    el.className = "editable-field";
+  });
+
+  // Tagline
+  document.querySelectorAll("[data-store-tagline]").forEach((el) => {
+    el.contentEditable = true;
+    el.className = "editable-field";
+  });
+
+  // Banner label
+  document.querySelectorAll("[data-store-label]").forEach((el) => {
+    el.contentEditable = true;
+    el.className = "editable-field";
+  });
+
+  // Announcement
+  document.querySelectorAll("[data-store-announcement]").forEach((el) => {
+    el.contentEditable = true;
+    el.className = "editable-field";
+  });
+
+  // Footer
+  document.querySelectorAll("[data-store-footer]").forEach((el) => {
+    el.contentEditable = true;
+    el.className = "editable-field";
+  });
+
+  // Add edit controls bar
+  const homeSection = document.getElementById("home");
+  if (homeSection && !document.getElementById("editControlsBar")) {
+    const controlsBar = document.createElement("div");
+    controlsBar.id = "editControlsBar";
+    controlsBar.className = "edit-controls-bar";
+    controlsBar.innerHTML = `
+      <div class="edit-controls-container">
+        <button id="addProductBtn" class="button button-primary">+ เพิ่มสินค้า</button>
+        <div style="flex: 1;"></div>
+        <button id="saveModeBtn" class="button button-success">บันทึก</button>
+        <button id="cancelModeBtn" class="button button-ghost">ยกเลิก</button>
+      </div>
+    `;
+    homeSection.parentNode.insertBefore(controlsBar, homeSection);
+  }
+}
+
+function removeEditableElements() {
+  document.querySelectorAll(".editable-field").forEach((el) => {
+    el.contentEditable = false;
+    el.className = "";
+  });
+
+  const controlsBar = document.getElementById("editControlsBar");
+  if (controlsBar) controlsBar.remove();
+}
+
+function updateEditStateField(fieldName, value) {
+  if (!editState) return;
+
+  switch (fieldName) {
+    case "name":
+      editState.settings.name = value;
+      break;
+    case "tagline":
+      editState.settings.tagline = value;
+      break;
+    case "bannerLabel":
+      editState.settings.bannerLabel = value;
+      break;
+    case "announcement":
+      editState.settings.announcement = value;
+      break;
+    case "footerNote":
+      editState.settings.footerNote = value;
+      break;
+  }
+}
+
+function deleteProduct(productId) {
+  if (!editState) return;
+  editState.products = editState.products.filter(p => p.id !== productId);
+  renderProducts();
+}
+
+function addCategoryEditControls() {
+  const categoryTabs = document.getElementById("categoryTabs");
+  if (!categoryTabs) return;
+
+  // Add edit controls inside category tabs div
+  if (!categoryTabs.querySelector(".category-edit-controls")) {
+    // Wrap category tabs buttons in a flex container
+    const tabsWrapper = document.createElement("div");
+    tabsWrapper.className = "tabs-wrapper";
+
+    // Move all buttons to wrapper
+    while (categoryTabs.firstChild) {
+      tabsWrapper.appendChild(categoryTabs.firstChild);
+    }
+    categoryTabs.appendChild(tabsWrapper);
+
+    // Add edit controls
+    const editControls = document.createElement("div");
+    editControls.id = "categoryEditControls";
+    editControls.className = "category-edit-controls";
+    editControls.innerHTML = `
+      <button id="editCategoryBtn" class="button button-ghost" title="แก้ไขหมวด">⚙️ แก้ไขหมวด</button>
+    `;
+    categoryTabs.appendChild(editControls);
+  }
+}
+
+function openCategoryEditor() {
+  if (!editState) return;
+
+  const categories = ["premium", "game", "service"];
+  const categoryLabels = store.categoryLabels;
+
+  const modal = document.getElementById("editCategoryModal");
+  if (!modal) {
+    createCategoryEditorModal();
+    return;
+  }
+
+  // Populate categories
+  const categoryList = document.getElementById("categoryList");
+  categoryList.innerHTML = categories.map(cat => `
+    <div class="category-edit-item">
+      <div class="category-label">
+        <span class="category-key">${escapeHtml(cat)}</span>
+      </div>
+      <input type="text" class="category-label-input" data-category="${cat}" placeholder="ชื่อหมวดที่แสดง" value="${escapeHtml(categoryLabels[cat] || cat)}">
+      <button class="category-delete-btn" data-delete-cat="${cat}" title="ลบหมวด">×</button>
+    </div>
+  `).join("");
+
+  // Add delete handlers
+  categoryList.querySelectorAll(".category-delete-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (confirm("ลบหมวดนี้หรือไม่? (สินค้าจะยังคงอยู่)")) {
+        editState.products.forEach(p => {
+          if (p.category === btn.dataset.deleteCat) {
+            p.category = "service";
+            p.categoryLabel = categoryLabels["service"] || "service";
+          }
+        });
+        openCategoryEditor(); // Refresh
+      }
+    });
+  });
+
+  modal.classList.add("active");
+  document.getElementById("categoryEditorModalLayer").classList.add("open");
+  document.body.classList.add("locked");
+}
+
+function createCategoryEditorModal() {
+  // Create separate modal layer for category editor
+  let modalLayer = document.getElementById("categoryEditorModalLayer");
+  if (!modalLayer) {
+    modalLayer = document.createElement("div");
+    modalLayer.id = "categoryEditorModalLayer";
+    modalLayer.className = "modal-layer";
+    modalLayer.setAttribute("aria-hidden", "true");
+    document.body.appendChild(modalLayer);
+  }
+
+  // Create backdrop
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.addEventListener("click", closeCategoryEditor);
+  modalLayer.appendChild(backdrop);
+
+  const modal = document.createElement("section");
+  modal.id = "editCategoryModal";
+  modal.className = "modal edit-category-modal";
+  modal.innerHTML = `
+    <button class="modal-close">×</button>
+    <span class="kicker">EDIT CATEGORIES</span>
+    <h2>แก้ไขหมวดสินค้า</h2>
+    <div id="categoryList"></div>
+    <div style="display: flex; gap: 8px; margin-top: 20px; margin-bottom: 20px;">
+      <button id="addCategoryBtn" class="button button-soft" style="flex: 1;">+ เพิ่มหมวด</button>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button id="saveCategoryBtn" class="button button-success button-full">บันทึก</button>
+      <button class="button button-ghost button-full">ยกเลิก</button>
+    </div>
+  `;
+
+  modal.querySelector(".modal-close").addEventListener("click", closeCategoryEditor);
+  modal.querySelector(".button-ghost").addEventListener("click", closeCategoryEditor);
+  modalLayer.appendChild(modal);
+
+  document.getElementById("saveCategoryBtn").addEventListener("click", () => {
+    saveCategoryChanges();
+  });
+
+  document.getElementById("addCategoryBtn").addEventListener("click", () => {
+    addNewCategory();
+  });
+}
+
+function closeCategoryEditor() {
+  const modal = document.getElementById("editCategoryModal");
+  if (modal) modal.remove();
+  const modalLayer = document.getElementById("categoryEditorModalLayer");
+  if (modalLayer) modalLayer.classList.remove("open");
+  document.body.classList.remove("locked");
+}
+
+function saveCategoryChanges() {
+  document.querySelectorAll(".category-label-input").forEach(input => {
+    const category = input.dataset.category;
+    const newLabel = input.value.trim();
+    if (newLabel) {
+      editState.products.forEach(p => {
+        if (p.category === category) {
+          p.categoryLabel = newLabel;
+        }
+      });
+    }
+  });
+
+  closeAddProductModal(); // Reuse close function for consistency
+  renderProducts();
+  showToast("บันทึกหมวดสินค้าแล้ว");
+}
+
+function addNewCategory() {
+  const categoryName = prompt("ชื่อหมวดใหม่ (ภาษาอังกฤษเท่านั้น):");
+  if (!categoryName || !categoryName.trim()) return;
+
+  const newCategoryKey = categoryName.toLowerCase().trim().replace(/\s+/g, "-");
+
+  if (editState.products.some(p => p.category === newCategoryKey)) {
+    showToast("หมวดนี้มีอยู่แล้ว");
+    return;
+  }
+
+  // Add to category labels
+  store.categoryLabels[newCategoryKey] = prompt("ชื่อหมวดที่แสดง (ภาษาไทย):", newCategoryKey) || newCategoryKey;
+
+  openCategoryEditor(); // Refresh
+  showToast(`เพิ่มหมวด "${newCategoryKey}" แล้ว`);
+}
+
+async function saveEditMode() {
+  if (!editState) return;
+
+  // Update settings from editable fields
+  editState.settings.name = document.querySelector("[data-store-name]")?.textContent || editState.settings.name;
+  editState.settings.tagline = document.querySelector("[data-store-tagline]")?.textContent || editState.settings.tagline;
+  editState.settings.bannerLabel = document.querySelector("[data-store-label]")?.textContent || editState.settings.bannerLabel;
+  editState.settings.announcement = document.querySelector("[data-store-announcement]")?.textContent || editState.settings.announcement;
+  editState.settings.footerNote = document.querySelector("[data-store-footer]")?.textContent || editState.settings.footerNote;
+
+  try {
+    // Save to API/DB
+    const response = await apiClient.saveStore(editState);
+    if (response?.success) {
+      storeState = JSON.parse(JSON.stringify(editState));
+      showToast("บันทึกข้อมูลสำเร็จ");
+      isEditMode = false;
+      disableEditMode();
+    }
+  } catch (error) {
+    showToast("เกิดข้อผิดพลาดในการบันทึก: " + error.message);
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -369,7 +858,82 @@ document.addEventListener("DOMContentLoaded", () => {
   renderCart();
   syncAuthState(authSession);
   refreshAuthSession();
+
+  // Setup edit mode listeners
+  setupEditModeListeners();
 });
+
+function setupEditModeListeners() {
+  // Edit toggle button
+  document.addEventListener("click", (event) => {
+    if (event.target.id === "editToggle") {
+      event.preventDefault();
+      toggleEditMode();
+    }
+  });
+
+  // Product delete buttons (delegation)
+  document.addEventListener("click", (event) => {
+    const deleteBtn = event.target.closest("[data-delete]");
+    if (deleteBtn) {
+      event.preventDefault();
+      const productId = Number(deleteBtn.dataset.delete);
+      deleteProduct(productId);
+    }
+  });
+
+  // Add product button (in controls bar)
+  document.addEventListener("click", (event) => {
+    if (event.target.id === "addProductBtn") {
+      event.preventDefault();
+      openAddProductModal();
+    }
+  });
+
+  // Add product card button
+  document.addEventListener("click", (event) => {
+    if (event.target.id === "addProductCardBtn" || event.target.closest("#addProductCardBtn")) {
+      event.preventDefault();
+      openAddProductModal();
+    }
+  });
+
+  // Edit category button
+  document.addEventListener("click", (event) => {
+    if (event.target.id === "editCategoryBtn" || event.target.closest("#editCategoryBtn")) {
+      event.preventDefault();
+      openCategoryEditor();
+    }
+  });
+
+  // Save button
+  document.addEventListener("click", (event) => {
+    if (event.target.id === "saveModeBtn") {
+      event.preventDefault();
+      saveEditMode();
+    }
+  });
+
+  // Cancel button
+  document.addEventListener("click", (event) => {
+    if (event.target.id === "cancelModeBtn") {
+      event.preventDefault();
+      isEditMode = false;
+      disableEditMode();
+      editState = null;
+    }
+  });
+
+  // Track editable field changes
+  document.addEventListener("blur", (event) => {
+    if (event.target.classList.contains("editable-field")) {
+      const fieldName = event.target.dataset.field;
+      if (fieldName) {
+        updateEditStateField(fieldName, event.target.textContent);
+      }
+    }
+  }, true);
+}
 
 document.getElementById("categoryTabs").addEventListener("click", (event) => {
   const button = event.target.closest("[data-category]");
