@@ -1,7 +1,7 @@
 // API Client สำหรับเชื่อมต่อ Cloudflare Worker
 // เปลี่ยน YOUR_API_URL เป็น URL จริง เช่น https://nexora-api.YOUR_SUBDOMAIN.workers.dev
 
-const API_URL = "https://game-store.s6701012610180.workers.dev";
+const API_URL = "https://game-store-api.s6701012610180.workers.dev";
 
 const apiClient = {
   async fetchStore() {
