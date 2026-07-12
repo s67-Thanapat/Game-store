@@ -166,7 +166,7 @@ function renderAccountModal() {
   logoutButton.dataset.action = "logout";
 }
 
-function syncAuthState(session) {
+async function syncAuthState(session) {
   authSession = session || null;
   authStatus = session?.token ? "signed-in" : "signed-out";
   currentUser = session?.user || null;
@@ -174,6 +174,18 @@ function syncAuthState(session) {
   store.setAdminAuthenticated(Boolean(currentUser && currentUser.role === "admin"));
   renderAuthControls();
   renderAccountModal();
+
+  // Fetch fresh store data after login
+  if (session?.token && store.useApi) {
+    try {
+      storeState = await store.fetchStoreFromAPI();
+      updateStoreText();
+      renderProducts();
+      renderCart();
+    } catch (error) {
+      console.error("Failed to fetch store data after login:", error);
+    }
+  }
 }
 
 async function refreshAuthSession() {
@@ -188,7 +200,7 @@ async function refreshAuthSession() {
   try {
     const response = await apiRequest("/api/me");
     const nextSession = { token: authSession.token, user: response.user };
-    syncAuthState(nextSession);
+    await syncAuthState(nextSession);
   } catch (error) {
     // Only sign out / clear session if the server returned 401 (Unauthorized) or 403 (Forbidden)
     if (error.statusCode === 401 || error.statusCode === 403) {
@@ -856,8 +868,9 @@ document.addEventListener("DOMContentLoaded", () => {
   updateStoreText();
   renderProducts();
   renderCart();
-  syncAuthState(authSession);
-  refreshAuthSession();
+  syncAuthState(authSession).then(() => {
+    refreshAuthSession();
+  });
 
   // Setup edit mode listeners
   setupEditModeListeners();
@@ -1039,13 +1052,11 @@ document.getElementById("authForm").addEventListener("submit", (event) => {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      syncAuthState({ token: response.token, user: response.user });
+      await syncAuthState({ token: response.token, user: response.user });
       closeModal();
       if (response.user?.role === "admin") {
         showToast("เข้าสู่ระบบผู้ดูแลสำเร็จ กำลังเปิดหน้าจัดการ");
-        setTimeout(() => {
-          window.location.href = "admin.html";
-        }, 350);
+        // Stay on homepage with edit mode enabled
         return;
       }
       showToast(mode === "register" ? `สร้างบัญชีสำเร็จ ยินดีต้อนรับ ${response.user.name}` : `เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${response.user.name}`);
@@ -1070,7 +1081,7 @@ document.getElementById("accountLogout").addEventListener("click", async () => {
     // Logout is best-effort; clear local state either way.
   }
 
-  syncAuthState(null);
+  await syncAuthState(null);
   closeModal();
   showToast("ออกจากระบบแล้ว");
 });
