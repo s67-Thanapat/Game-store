@@ -17,7 +17,10 @@
       "Content-Type": "application/json",
       ...(options.headers || {}),
     };
-    const response = await fetch(pathname, {
+    // Use Worker API URL for /api/* endpoints
+    const url = pathname.startsWith("/api/") ? `${API_URL}${pathname}` : pathname;
+
+    const response = await fetch(url, {
       ...options,
       headers,
     });
