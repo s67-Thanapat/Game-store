@@ -1,4 +1,7 @@
 (function () {
+  // ⚙️ ตั้งค่า: เปลี่ยน false เป็น true ให้ใช้ API แทน localStorage
+  const USE_API = true;
+
   const STORAGE_KEY = "nexora-store-state";
   const ADMIN_SESSION_KEY = "nexora-admin-session";
   const AUTH_SESSION_KEY = "nexora-auth-session";
@@ -181,6 +184,11 @@
   }
 
   function loadState() {
+    if (USE_API) {
+      // ⚠️ API version - ต้องเรียก async ใน admin.js
+      console.warn("⚠️ USE_API=true แต่เรียก loadState() sync - ใช้ fetchStoreFromAPI() แทน");
+      return normalizeState(DEFAULT_STATE);
+    }
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       return normalizeState(raw ? JSON.parse(raw) : DEFAULT_STATE);
@@ -189,9 +197,34 @@
     }
   }
 
+  async function fetchStoreFromAPI() {
+    if (!USE_API || typeof apiClient === "undefined") {
+      return loadState();
+    }
+    try {
+      const data = await apiClient.fetchStore();
+      return normalizeState(data || DEFAULT_STATE);
+    } catch (error) {
+      console.error("Error fetching from API:", error);
+      return normalizeState(DEFAULT_STATE);
+    }
+  }
+
   function saveState(nextState) {
     const normalized = normalizeState(nextState);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+
+    if (USE_API) {
+      // API version - เรียก async ใน admin.js
+      if (typeof apiClient !== "undefined") {
+        apiClient.saveStore(normalized).catch(err => {
+          console.error("Error saving to API:", err);
+        });
+      }
+    } else {
+      // localStorage version
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    }
+
     return normalized;
   }
 
@@ -257,9 +290,11 @@
     authSessionKey: AUTH_SESSION_KEY,
     defaultState: clone(DEFAULT_STATE),
     categoryLabels: CATEGORY_LABELS,
+    useApi: USE_API,
     escapeHtml,
     normalizeState,
     loadState,
+    fetchStoreFromAPI,
     saveState,
     setAdminAuthenticated,
     isAdminAuthenticated,

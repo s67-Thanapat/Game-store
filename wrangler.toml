@@ -1,0 +1,9 @@
+name = "nexora-api"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "game-store-db"
+database_id = "c26e9d55-f072-4996-a313-088412d591f7"
