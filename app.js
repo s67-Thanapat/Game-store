@@ -1055,8 +1055,11 @@ document.getElementById("authForm").addEventListener("submit", (event) => {
       await syncAuthState({ token: response.token, user: response.user });
       closeModal();
       if (response.user?.role === "admin") {
-        showToast("เข้าสู่ระบบผู้ดูแลสำเร็จ กำลังเปิดหน้าจัดการ");
-        // Stay on homepage with edit mode enabled
+        showToast("เข้าสู่ระบบผู้ดูแลสำเร็จ เปิดโหมดแก้ไข");
+        // Enable edit mode for admin
+        if (!isEditMode) {
+          toggleEditMode();
+        }
         return;
       }
       showToast(mode === "register" ? `สร้างบัญชีสำเร็จ ยินดีต้อนรับ ${response.user.name}` : `เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${response.user.name}`);
